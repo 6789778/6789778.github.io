@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FC 25 Card Shop</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Fredoka One', cursive; background: #050505; color: white; text-align: center; margin: 0; padding: 20px; }
+        h1 { color: #00ff88; text-shadow: 0 0 10px #00ff8855; }
+        
+        .step { display: none; max-width: 500px; margin: auto; animation: fadeIn 0.5s; }
+        .active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+            gap: 15px; 
+            margin-top: 20px; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            padding: 10px;
+            background: #0a0a0a;
+            border-radius: 15px;
+            border: 1px solid #222;
+        }
+
+        .item-card { 
+            background: #111; border: 2px solid #222; padding: 15px; border-radius: 15px; 
+            cursor: pointer; transition: 0.3s; 
+        }
+        .item-card:hover { border-color: #00ff88; transform: scale(1.02); }
+        .item-card img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 10px; }
+        .item-card.selected { border-color: #00ff88; background: #00ff8822; }
+
+        .pos-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
+        .pos-btn { 
+            background: #111; border: 2px solid #222; color: white; padding: 12px 18px; 
+            border-radius: 10px; cursor: pointer; transition: 0.2s; font-family: inherit;
+        }
+        .pos-btn:hover { border-color: #00ff88; }
+        .pos-btn.selected { background: #00ff88; color: black; border-color: #00ff88; }
+
+        .stat-box { display: flex; justify-content: space-around; background: #111; padding: 15px; border-radius: 15px; margin-bottom: 10px; }
+        .stat-input { width: 50px; background: #222; border: 1px solid #444; color: #00ff88; text-align: center; padding: 5px; border-radius: 5px; font-family: inherit; }
+        
+        input[type="text"], input[type="number"] { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: none; background: #111; color: white; font-family: inherit; box-sizing: border-box; }
+        .stat-box input[type="number"] { width: 50px; margin: 0; padding: 5px; } /* Override for stats grid */
+        
+        button { background: #00ff88; color: black; border: none; padding: 15px 30px; border-radius: 10px; font-family: inherit; font-size: 18px; cursor: pointer; width: 100%; margin-top: 20px; }
+        button:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+    <h1>FC 25 CARD SHOP</h1>
+
+    <form id="orderForm">
+        <!-- STEP 1: BASIC INFO -->
+        <div id="step1" class="step active">
+            <h2>Enter Details</h2>
+            <input type="text" id="buyer_name" placeholder="Your Name (The Buyer)" required>
+            <input type="text" id="player_name" placeholder="Player Name for the Card" required>
+            <input type="text" id="nationality" placeholder="Nationality (e.g. France)" required>
+            <button type="button" onclick="nextStep('step2')">Next: Choose Position</button>
+        </div>
+
+        <!-- STEP 2: POSITION -->
+        <div id="step2" class="step">
+            <h2>Select Position</h2>
+            <div class="pos-grid" id="pos-grid"></div>
+            <input type="hidden" id="selected-pos" required>
+            <button type="button" onclick="nextStep('step3')">Next: Select League</button>
+        </div>
+
+        <!-- STEP 3: LEAGUE -->
+        <div id="step3" class="step">
+            <h2>Select League</h2>
+            <div class="grid" id="league-grid"></div>
+            <input type="hidden" id="selected-league" required>
+            <button type="button" onclick="nextStep('step4')">Next: Choose Card Theme</button>
+        </div>
+
+        <!-- STEP 4: CARD THEME -->
+        <div id="step4" class="step">
+            <h2>Select Card Theme</h2>
+            <div class="grid" id="theme-grid"></div>
+            <input type="hidden" id="selected-type" required>
+            <button type="button" onclick="nextStep('step5')">Next: Choose Club</button>
+        </div>
+
+        <!-- STEP 5: CLUB LOGO -->
+        <div id="step5" class="step">
+            <h2>Select Club</h2>
+            <div class="grid" id="club-grid"></div>
+            <input type="hidden" id="selected-club" required>
+            <button type="button" onclick="nextStep('step6')">Next: Set Stats</button>
+        </div>
+
+        <!-- STEP 6: STATS -->
+        <div id="step6" class="step">
+            <h2>Customize Stats</h2>
+            <div class="stat-box">
+                <div>PAC<br><input type="number" id="pac" class="stat-input" value="85"></div>
+                <div>SHO<br><input type="number" id="sho" class="stat-input" value="85"></div>
+                <div>PAS<br><input type="number" id="pas" class="stat-input" value="85"></div>
+            </div>
+            <div class="stat-box">
+                <div>DRI<br><input type="number" id="dri" class="stat-input" value="85"></div>
+                <div>DEF<br><input type="number" id="def" class="stat-input" value="85"></div>
+                <div>PHY<br><input type="number" id="phy" class="stat-input" value="85"></div>
+                <div>OVR<br><input type="number" id="ovr" class="stat-input" value="85"></div>
+            </div>
+            <button type="submit">Complete Order</button>
+        </div>
+
+        <!-- THANK YOU -->
+        <div id="thanks" class="step">
+            <h2 style="color: #00ff88;">Order Sent!</h2>
+            <p>Your custom FC 25 order is being processed!</p>
+            <button type="button" onclick="location.reload()">Send Another</button>
+        </div>
+    </form>
+
+    <script>
+        const SB_URL = 'https://zmwjcsyqyeswycgxmgnf.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inptd2pjc3lxeWVzd3ljZ3htZ25mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2OTg4MTEsImV4cCI6MjA5MzI3NDgxMX0.bqrQmYQQNNwcJz4mGDVtldAKP20TrlyzLkRlSDakw1A';
+        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
+
+        const positions = ["ST", "LW", "RW", "CF", "CAM", "CM", "CDM", "LB", "CB", "RB", "GK"];
+
+        const cardThemes = [
+            { name: "Gold Rare", img: "https://github.com/6789778/Images/raw/refs/heads/main/1_gold.avif" },
+            { name: "TOTY", img: "https://github.com/6789778/Images/raw/refs/heads/main/fc26-toty-DUEX-2nE.avif" },
+            { name: "Icon", img: "https://github.com/6789778/Images/raw/refs/heads/main/fc26-official-icon-card-design-icon-v0-264hftgqsn8f1.avif" },
+            { name: "Hero", img: "https://github.com/6789778/Images/raw/refs/heads/main/umc57qdypq8f1.avif" },
+            { name: "TOTW", img: "https://github.com/6789778/Images/raw/refs/heads/main/GuExy7WXIAAIjZ8.avif" },
+            { name: "Futties", img: "https://github.com/6789778/Images/raw/refs/heads/main/16_futties.avif" }
+        ];
+
+        const leagues = [
+            { name: "Premier League", img: "https://upload.wikimedia.org/wikipedia/en/f/f2/Premier_League_Logo.svg" },
+            { name: "La Liga", img: "https://upload.wikimedia.org/wikipedia/commons/0/0f/LaLiga_logo_2023.svg" },
+            { name: "Bundesliga", img: "https://upload.wikimedia.org/wikipedia/en/d/df/Bundesliga_logo_%282017%29.svg" },
+            { name: "Serie A", img: "https://upload.wikimedia.org/wikipedia/commons/e/e9/Serie_A_logo_2022.svg" },
+            { name: "Ligue 1", img: "https://github.com/6789778/Images/raw/refs/heads/main/Logo_Ligue_1_2024.svg" },
+            { name: "Saudi League", img: "https://github.com/6789778/Images/raw/refs/heads/main/Roshn_Saudi_League_Logo.svg.svg" },
+            { name: "MLS", img: "https://github.com/6789778/Images/raw/refs/heads/main/Major_League_Soccer_logo.svg" }
+        ];
+
+        const clubs = [
+            { name: "Real Madrid", img: "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg" },
+            { name: "FC Barcelona", img: "https://github.com/6789778/Images/raw/refs/heads/main/FC_Barcelona_(crest).svg.svg" },
+            { name: "Man City", img: "https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg" },
+            { name: "Man United", img: "https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" },
+            { name: "Liverpool", img: "https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg" },
+            { name: "Bayern Munich", img: "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_München_logo_%282017%29.svg" },
+            { name: "PSG", img: "https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg" },
+            { name: "Juventus", img: "https://github.com/6789778/Images/raw/refs/heads/main/Juventus_FC_-_logo_black_(Italy,_2020).svg" },
+            { name: "Al Nassr", img: "https://github.com/6789778/Images/raw/refs/heads/main/Nassr_FC_Logo.svg" },
+            { name: "Inter Miami", img: "https://upload.wikimedia.org/wikipedia/en/5/5c/Inter_Miami_CF_logo.svg" },
+            { name: "Arsenal", img: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg" },
+            { name: "AC Milan", img: "https://upload.wikimedia.org/wikipedia/commons/d/d0/Logo_of_AC_Milan.svg" }
+        ];
+
+        // Fill Everything
+        document.getElementById('pos-grid').innerHTML = positions.map(p => `<div class="pos-btn" onclick="selectItem('pos', '${p}', this)">${p}</div>`).join('');
+        document.getElementById('league-grid').innerHTML = leagues.map(l => `<div class="item-card" onclick="selectItem('league', '${l.name}', this)"><img src="${l.img}"><div>${l.name}</div></div>`).join('');
+        document.getElementById('theme-grid').innerHTML = cardThemes.map(t => `<div class="item-card" onclick="selectItem('theme', '${t.name}', this)"><img src="${t.img}"><div>${t.name}</div></div>`).join('');
+        document.getElementById('club-grid').innerHTML = clubs.map(c => `<div class="item-card" onclick="selectItem('club', '${c.name}', this)"><img src="${c.img}"><div>${c.name}</div></div>`).join('');
+
+        function selectItem(type, name, element) {
+            let parentId = type === 'pos' ? 'pos-grid' : `${type}-grid`;
+            document.querySelectorAll(`#${parentId} .pos-btn, #${parentId} .item-card`).forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            let hiddenInputId = type === 'pos' ? 'selected-pos' : 
+                               type === 'league' ? 'selected-league' :
+                               type === 'theme' ? 'selected-type' : 'selected-club';
+            document.getElementById(hiddenInputId).value = name;
+        }
+
+        function nextStep(stepId) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById(stepId).classList.add('active');
+        }
+
+        document.getElementById('orderForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            // Format stats to include all 6 fields plus OVR
+            const statsText = `PAC:${document.getElementById('pac').value} SHO:${document.getElementById('sho').value} PAS:${document.getElementById('pas').value} DRI:${document.getElementById('dri').value} DEF:${document.getElementById('def').value} PHY:${document.getElementById('phy').value}`;
+            
+            const { error } = await supabaseClient.from('orders').insert([{
+                buyer: document.getElementById('buyer_name').value,
+                player: document.getElementById('player_name').value,
+                nationality: document.getElementById('nationality').value,
+                position: document.getElementById('selected-pos').value,
+                league: document.getElementById('selected-league').value,
+                card_type: document.getElementById('selected-type').value,
+                club: document.getElementById('selected-club').value,
+                stats: statsText,
+                ovr: document.getElementById('ovr').value // Synchronized with Admin
+            }]);
+
+            if (error) alert("Error: " + error.message);
+            else nextStep('thanks');
+        };
+    </script>
+</body>
+</html>
