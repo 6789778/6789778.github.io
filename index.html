@@ -3,211 +3,705 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FC 25 Card Shop</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>TheOne Store — The Ultimate Custom App Store</title>
+    <meta name="description" content="A premium, open-source application store powered by Python and GitHub releases. Download, install, and manage your apps instantly.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Fredoka One', cursive; background: #050505; color: white; text-align: center; margin: 0; padding: 20px; }
-        h1 { color: #00ff88; text-shadow: 0 0 10px #00ff8855; }
-        
-        .step { display: none; max-width: 500px; margin: auto; animation: fadeIn 0.5s; }
-        .active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
-            gap: 15px; 
-            margin-top: 20px; 
-            max-height: 400px; 
-            overflow-y: auto; 
-            padding: 10px;
-            background: #0a0a0a;
-            border-radius: 15px;
-            border: 1px solid #222;
+        /* ─────────────────────────────────────────────────────────────
+           THEME DEFINITIONS & RESET
+           ───────────────────────────────────────────────────────────── */
+        :root {
+            --bg-dark: #07090e;
+            --bg-card: #0e131f;
+            --bg-nav: rgba(14, 19, 31, 0.75);
+            --accent: #6c63ff;
+            --accent-glow: rgba(108, 99, 255, 0.4);
+            --accent-teal: #00d4aa;
+            --accent-teal-glow: rgba(0, 212, 170, 0.3);
+            --text-primary: #f0f4ff;
+            --text-sec: #8892a8;
+            --text-dim: #4b5568;
+            --border: rgba(108, 99, 255, 0.15);
+            --border-hover: rgba(108, 99, 255, 0.4);
+            --success: #22c55e;
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-sans: 'Outfit', sans-serif;
+            --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .item-card { 
-            background: #111; border: 2px solid #222; padding: 15px; border-radius: 15px; 
-            cursor: pointer; transition: 0.3s; 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
         }
-        .item-card:hover { border-color: #00ff88; transform: scale(1.02); }
-        .item-card img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 10px; }
-        .item-card.selected { border-color: #00ff88; background: #00ff8822; }
 
-        .pos-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
-        .pos-btn { 
-            background: #111; border: 2px solid #222; color: white; padding: 12px 18px; 
-            border-radius: 10px; cursor: pointer; transition: 0.2s; font-family: inherit;
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+            line-height: 1.6;
         }
-        .pos-btn:hover { border-color: #00ff88; }
-        .pos-btn.selected { background: #00ff88; color: black; border-color: #00ff88; }
 
-        .stat-box { display: flex; justify-content: space-around; background: #111; padding: 15px; border-radius: 15px; margin-bottom: 10px; }
-        .stat-input { width: 50px; background: #222; border: 1px solid #444; color: #00ff88; text-align: center; padding: 5px; border-radius: 5px; font-family: inherit; }
-        
-        input[type="text"], input[type="number"] { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: none; background: #111; color: white; font-family: inherit; box-sizing: border-box; }
-        .stat-box input[type="number"] { width: 50px; margin: 0; padding: 5px; } /* Override for stats grid */
-        
-        button { background: #00ff88; color: black; border: none; padding: 15px 30px; border-radius: 10px; font-family: inherit; font-size: 18px; cursor: pointer; width: 100%; margin-top: 20px; }
-        button:active { transform: scale(0.98); }
+        /* ─────────────────────────────────────────────────────────────
+           GLOWING BACKGROUND ELEMENTS
+           ───────────────────────────────────────────────────────────── */
+        .glow-sphere {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(140px);
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.45;
+        }
+
+        .glow-1 {
+            top: -10%;
+            left: 20%;
+            width: 45vw;
+            height: 45vw;
+            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+        }
+
+        .glow-2 {
+            top: 45%;
+            right: -10%;
+            width: 35vw;
+            height: 35vw;
+            background: radial-gradient(circle, var(--accent-teal) 0%, transparent 70%);
+        }
+
+        /* ─────────────────────────────────────────────────────────────
+           HEADER & NAV
+           ───────────────────────────────────────────────────────────── */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--bg-nav);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            z-index: 100;
+            transition: var(--transition);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            gap: 8px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .logo-diamond {
+            width: 16px;
+            height: 16px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-teal));
+            transform: rotate(45deg);
+            border-radius: 2px;
+            box-shadow: 0 0 12px var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-sec);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
+
+        /* ─────────────────────────────────────────────────────────────
+           HERO SECTION
+           ───────────────────────────────────────────────────────────── */
+        .hero {
+            position: relative;
+            padding: 180px 24px 100px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .badge {
+            background: linear-gradient(90deg, rgba(108, 99, 255, 0.1), rgba(0, 212, 170, 0.1));
+            border: 1px solid var(--border);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 24px;
+            color: var(--accent-teal);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .badge-pulse {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-teal);
+            border-radius: 50%;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 212, 170, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(0, 212, 170, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 212, 170, 0); }
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            max-width: 900px;
+            background: linear-gradient(135deg, var(--text-primary) 30%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: var(--text-sec);
+            max-width: 650px;
+            margin-bottom: 40px;
+        }
+
+        /* PREMIUM CTA BUTTON */
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, var(--accent), #5046e5);
+            color: #fff;
+            padding: 16px 36px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 8px 30px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.25),
+                transparent
+            );
+            transition: all 0.6s ease;
+        }
+
+        .cta-btn:hover::before {
+            left: 100%;
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(108, 99, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #7c75ff, #5c52f5);
+        }
+
+        .cta-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .dl-subtext {
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        /* ─────────────────────────────────────────────────────────────
+           FEATURES GRID
+           ───────────────────────────────────────────────────────────── */
+        .features {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .feat-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .feat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 10% 10%, rgba(108, 99, 255, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .feat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--border-hover);
+            box-shadow: 0 12px 40px rgba(108, 99, 255, 0.15);
+        }
+
+        .feat-icon {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .feat-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .feat-card p {
+            color: var(--text-sec);
+            font-size: 0.95rem;
+        }
+
+        /* ─────────────────────────────────────────────────────────────
+           VERSIONS SECTION
+           ───────────────────────────────────────────────────────────── */
+        .versions-section {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 80px 24px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: var(--text-sec);
+        }
+
+        .timeline {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .ver-item {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .ver-item:hover {
+            border-color: var(--border-hover);
+            background-color: rgba(14, 19, 31, 0.9);
+        }
+
+        .ver-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ver-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ver-badge {
+            background-color: rgba(108, 99, 255, 0.15);
+            color: var(--accent);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .ver-badge.latest {
+            background-color: rgba(0, 212, 170, 0.15);
+            color: var(--accent-teal);
+        }
+
+        .ver-date {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .ver-summary {
+            margin-top: 10px;
+            color: var(--text-sec);
+            font-size: 0.95rem;
+        }
+
+        /* Collapsible content */
+        .ver-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            margin-top: 0;
+            border-top: 1px solid transparent;
+            padding-top: 0;
+        }
+
+        .ver-item.active .ver-details {
+            max-height: 300px;
+            margin-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 16px;
+        }
+
+        .changelog-list {
+            list-style: none;
+            padding-left: 4px;
+        }
+
+        .changelog-list li {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-sec);
+            position: relative;
+            padding-left: 18px;
+        }
+
+        .changelog-list li::before {
+            content: "✓";
+            color: var(--accent-teal);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .changelog-list li.added::before {
+            content: "+";
+            color: var(--accent);
+        }
+
+        /* ─────────────────────────────────────────────────────────────
+           HOW IT WORKS SECTION
+           ───────────────────────────────────────────────────────────── */
+        .code-section {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 60px 24px;
+            background-color: #0b0f19;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .code-section {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+        }
+
+        .code-info h2 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .code-info p {
+            color: var(--text-sec);
+            margin-bottom: 20px;
+        }
+
+        .code-block {
+            background-color: #05070c;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            color: #d1d5db;
+            overflow-x: auto;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .code-keyword { color: #f472b6; }
+        .code-string { color: #34d399; }
+        .code-number { color: #fb7185; }
+        .code-comment { color: #6b7280; }
+
+        /* ─────────────────────────────────────────────────────────────
+           FOOTER
+           ───────────────────────────────────────────────────────────── */
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 60px 24px 30px;
+            text-align: center;
+            background-color: #07090e;
+        }
+
+        .footer-logo {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-logo span {
+            color: var(--accent);
+        }
+
+        footer p {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
     </style>
 </head>
 <body>
 
-    <h1>FC 25 CARD SHOP</h1>
+    <!-- BG Glows -->
+    <div class="glow-sphere glow-1"></div>
+    <div class="glow-sphere glow-2"></div>
 
-    <form id="orderForm">
-        <!-- STEP 1: BASIC INFO -->
-        <div id="step1" class="step active">
-            <h2>Enter Details</h2>
-            <input type="text" id="buyer_name" placeholder="Your Name (The Buyer)" required>
-            <input type="text" id="player_name" placeholder="Player Name for the Card" required>
-            <input type="text" id="nationality" placeholder="Nationality (e.g. France)" required>
-            <button type="button" onclick="nextStep('step2')">Next: Choose Position</button>
+    <!-- Navigation Header -->
+    <header id="header">
+        <nav class="nav-container">
+            <a href="#" class="logo">
+                <div class="logo-diamond"></div>
+                TheOne<span>Store</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#code">Developer Setup</a></li>
+                <li><a href="#versions">Changelog</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="badge">
+            <div class="badge-pulse"></div>
+            TheOne Store v1.0.0 is Live
         </div>
-
-        <!-- STEP 2: POSITION -->
-        <div id="step2" class="step">
-            <h2>Select Position</h2>
-            <div class="pos-grid" id="pos-grid"></div>
-            <input type="hidden" id="selected-pos" required>
-            <button type="button" onclick="nextStep('step3')">Next: Select League</button>
+        <h1>The Ultimate Desktop Store<br>Powered by GitHub</h1>
+        <p>A beautiful, lightning-fast Python app client that brings all your executable applications directly from GitHub releases straight to your Windows machine.</p>
+        
+        <div>
+            <!-- Remote download link to GitHub raw source -->
+            <a href="https://github.com/6789778/TheOne/raw/main/theone_store.py" class="cta-btn" id="btn-download" download>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download for Windows (.exe)
+            </a>
+            <div class="dl-subtext">Version 1.0.0 • Python Executable • Size: ~15.3 MB</div>
         </div>
+    </section>
 
-        <!-- STEP 3: LEAGUE -->
-        <div id="step3" class="step">
-            <h2>Select League</h2>
-            <div class="grid" id="league-grid"></div>
-            <input type="hidden" id="selected-league" required>
-            <button type="button" onclick="nextStep('step4')">Next: Choose Card Theme</button>
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="feat-card">
+            <div class="feat-icon">💎</div>
+            <h3>Premium Aesthetics</h3>
+            <p>Designed with a beautiful, responsive, dark-mode window hierarchy complete with smooth grid layouts and hover animations.</p>
         </div>
-
-        <!-- STEP 4: CARD THEME -->
-        <div id="step4" class="step">
-            <h2>Select Card Theme</h2>
-            <div class="grid" id="theme-grid"></div>
-            <input type="hidden" id="selected-type" required>
-            <button type="button" onclick="nextStep('step5')">Next: Choose Club</button>
+        <div class="feat-card">
+            <div class="feat-icon">💽</div>
+            <h3>Intelligent Disk Check</h3>
+            <p>Runs local space diagnostics on click. Shows exact storage metrics, visual checks, and required disk cleanups prior to execution.</p>
         </div>
-
-        <!-- STEP 5: CLUB LOGO -->
-        <div id="step5" class="step">
-            <h2>Select Club</h2>
-            <div class="grid" id="club-grid"></div>
-            <input type="hidden" id="selected-club" required>
-            <button type="button" onclick="nextStep('step6')">Next: Set Stats</button>
+        <div class="feat-card">
+            <div class="feat-icon">🔗</div>
+            <h3>GitHub Releases</h3>
+            <p>Directly integrates with the GitHub releases architecture, providing clean, direct, and unthrottled application downloads.</p>
         </div>
+    </section>
 
-        <!-- STEP 6: STATS -->
-        <div id="step6" class="step">
-            <h2>Customize Stats</h2>
-            <div class="stat-box">
-                <div>PAC<br><input type="number" id="pac" class="stat-input" value="85"></div>
-                <div>SHO<br><input type="number" id="sho" class="stat-input" value="85"></div>
-                <div>PAS<br><input type="number" id="pas" class="stat-input" value="85"></div>
+    <!-- Code Section (Developer Friendly) -->
+    <section class="code-section" id="code">
+        <div class="code-info">
+            <h2>Add Custom Apps Easily</h2>
+            <p>Adding applications to your store is as simple as inserting a Python dictionary item. Configure names, sizes, icons, categories, and direct links in the catalog.</p>
+            <p style="font-size: 0.9rem; color: var(--text-dim);">Open <strong>theone_store.py</strong> to customize the store catalogue instantly.</p>
+        </div>
+        <div>
+            <div class="code-block">
+<span class="code-comment"># Paste into APP_CATALOG table</span>
+{
+  <span class="code-keyword">"name"</span>: <span class="code-string">"My Custom App"</span>,
+  <span class="code-keyword">"version"</span>: <span class="code-string">"1.2.0"</span>,
+  <span class="code-keyword">"description"</span>: <span class="code-string">"My custom application description."</span>,
+  <span class="code-keyword">"category"</span>: <span class="code-string">"Utilities"</span>,
+  <span class="code-keyword">"color"</span>: <span class="code-string">"#6C63FF"</span>,
+  <span class="code-keyword">"icon"</span>: <span class="code-string">"🚀"</span>,
+  <span class="code-keyword">"size_mb"</span>: <span class="code-number">12.5</span>,
+  <span class="code-keyword">"github_url"</span>: <span class="code-string">"https://github.com/..."</span>
+}
             </div>
-            <div class="stat-box">
-                <div>DRI<br><input type="number" id="dri" class="stat-input" value="85"></div>
-                <div>DEF<br><input type="number" id="def" class="stat-input" value="85"></div>
-                <div>PHY<br><input type="number" id="phy" class="stat-input" value="85"></div>
-                <div>OVR<br><input type="number" id="ovr" class="stat-input" value="85"></div>
+        </div>
+    </section>
+
+    <!-- Versions / Changelog Section -->
+    <section class="versions-section" id="versions">
+        <div class="section-header">
+            <h2>Release History</h2>
+            <p>Track releases, additions, and updates made to TheOne Store.</p>
+        </div>
+
+        <div class="timeline">
+            <!-- Active/Latest Version -->
+            <div class="ver-item active" onclick="toggleVersion(this)">
+                <div class="ver-header">
+                    <div class="ver-title">
+                        <span class="ver-badge latest">v1.0.0 (LATEST)</span>
+                        <strong>Official Launch</strong>
+                    </div>
+                    <span class="ver-date">June 2026</span>
+                </div>
+                <div class="ver-summary">First official, compiled version of the custom store client.</div>
+                <div class="ver-details">
+                    <ul class="changelog-list">
+                        <li class="added">Beautiful custom Tkinter UI architecture with search and categorical sidebar filters.</li>
+                        <li class="added">Intelligent local disk storage space verification with warning prompts.</li>
+                        <li class="added">Parallel thread-safe downloading with customized progress bar metrics.</li>
+                        <li class="added">Dynamic hex color blending for badge components matching card categories.</li>
+                    </ul>
+                </div>
             </div>
-            <button type="submit">Complete Order</button>
-        </div>
 
-        <!-- THANK YOU -->
-        <div id="thanks" class="step">
-            <h2 style="color: #00ff88;">Order Sent!</h2>
-            <p>Your custom FC 25 order is being processed!</p>
-            <button type="button" onclick="location.reload()">Send Another</button>
+            <!-- Version 0.9 Beta -->
+            <div class="ver-item" onclick="toggleVersion(this)">
+                <div class="ver-header">
+                    <div class="ver-title">
+                        <span class="ver-badge">v0.9.0 (BETA)</span>
+                        <strong>Beta Core Framework</strong>
+                    </div>
+                    <span class="ver-date">May 2026</span>
+                </div>
+                <div class="ver-summary">Core logic and GitHub API endpoints testing.</div>
+                <div class="ver-details">
+                    <ul class="changelog-list">
+                        <li>Implemented base downloading script using requests streaming module.</li>
+                        <li>Configured basic application catalog format template.</li>
+                        <li>Initial dark mode canvas and scroll configurations.</li>
+                    </ul>
+                </div>
+            </div>
         </div>
-    </form>
+    </section>
 
+    <!-- Footer -->
+    <footer>
+        <div class="footer-logo">
+            <div class="logo-diamond" style="width: 12px; height: 12px;"></div>
+            TheOne<span>Store</span>
+        </div>
+        <p>&copy; 2026 TheOne Store. Fully Open Source.</p>
+    </footer>
+
+    <!-- Interaction Script -->
     <script>
-        const SB_URL = 'https://zmwjcsyqyeswycgxmgnf.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inptd2pjc3lxeWVzd3ljZ3htZ25mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2OTg4MTEsImV4cCI6MjA5MzI3NDgxMX0.bqrQmYQQNNwcJz4mGDVtldAKP20TrlyzLkRlSDakw1A';
-        const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-
-        const positions = ["ST", "LW", "RW", "CF", "CAM", "CM", "CDM", "LB", "CB", "RB", "GK"];
-
-        const cardThemes = [
-            { name: "Gold Rare", img: "https://github.com/6789778/Images/raw/refs/heads/main/1_gold.avif" },
-            { name: "TOTY", img: "https://github.com/6789778/Images/raw/refs/heads/main/fc26-toty-DUEX-2nE.avif" },
-            { name: "Icon", img: "https://github.com/6789778/Images/raw/refs/heads/main/fc26-official-icon-card-design-icon-v0-264hftgqsn8f1.avif" },
-            { name: "Hero", img: "https://github.com/6789778/Images/raw/refs/heads/main/umc57qdypq8f1.avif" },
-            { name: "TOTW", img: "https://github.com/6789778/Images/raw/refs/heads/main/GuExy7WXIAAIjZ8.avif" },
-            { name: "Futties", img: "https://github.com/6789778/Images/raw/refs/heads/main/16_futties.avif" }
-        ];
-
-        const leagues = [
-            { name: "Premier League", img: "https://upload.wikimedia.org/wikipedia/en/f/f2/Premier_League_Logo.svg" },
-            { name: "La Liga", img: "https://upload.wikimedia.org/wikipedia/commons/0/0f/LaLiga_logo_2023.svg" },
-            { name: "Bundesliga", img: "https://upload.wikimedia.org/wikipedia/en/d/df/Bundesliga_logo_%282017%29.svg" },
-            { name: "Serie A", img: "https://upload.wikimedia.org/wikipedia/commons/e/e9/Serie_A_logo_2022.svg" },
-            { name: "Ligue 1", img: "https://github.com/6789778/Images/raw/refs/heads/main/Logo_Ligue_1_2024.svg" },
-            { name: "Saudi League", img: "https://github.com/6789778/Images/raw/refs/heads/main/Roshn_Saudi_League_Logo.svg.svg" },
-            { name: "MLS", img: "https://github.com/6789778/Images/raw/refs/heads/main/Major_League_Soccer_logo.svg" }
-        ];
-
-        const clubs = [
-            { name: "Real Madrid", img: "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg" },
-            { name: "FC Barcelona", img: "https://github.com/6789778/Images/raw/refs/heads/main/FC_Barcelona_(crest).svg.svg" },
-            { name: "Man City", img: "https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg" },
-            { name: "Man United", img: "https://upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg" },
-            { name: "Liverpool", img: "https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg" },
-            { name: "Bayern Munich", img: "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_München_logo_%282017%29.svg" },
-            { name: "PSG", img: "https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg" },
-            { name: "Juventus", img: "https://github.com/6789778/Images/raw/refs/heads/main/Juventus_FC_-_logo_black_(Italy,_2020).svg" },
-            { name: "Al Nassr", img: "https://github.com/6789778/Images/raw/refs/heads/main/Nassr_FC_Logo.svg" },
-            { name: "Inter Miami", img: "https://upload.wikimedia.org/wikipedia/en/5/5c/Inter_Miami_CF_logo.svg" },
-            { name: "Arsenal", img: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg" },
-            { name: "AC Milan", img: "https://upload.wikimedia.org/wikipedia/commons/d/d0/Logo_of_AC_Milan.svg" }
-        ];
-
-        // Fill Everything
-        document.getElementById('pos-grid').innerHTML = positions.map(p => `<div class="pos-btn" onclick="selectItem('pos', '${p}', this)">${p}</div>`).join('');
-        document.getElementById('league-grid').innerHTML = leagues.map(l => `<div class="item-card" onclick="selectItem('league', '${l.name}', this)"><img src="${l.img}"><div>${l.name}</div></div>`).join('');
-        document.getElementById('theme-grid').innerHTML = cardThemes.map(t => `<div class="item-card" onclick="selectItem('theme', '${t.name}', this)"><img src="${t.img}"><div>${t.name}</div></div>`).join('');
-        document.getElementById('club-grid').innerHTML = clubs.map(c => `<div class="item-card" onclick="selectItem('club', '${c.name}', this)"><img src="${c.img}"><div>${c.name}</div></div>`).join('');
-
-        function selectItem(type, name, element) {
-            let parentId = type === 'pos' ? 'pos-grid' : `${type}-grid`;
-            document.querySelectorAll(`#${parentId} .pos-btn, #${parentId} .item-card`).forEach(el => el.classList.remove('selected'));
-            element.classList.add('selected');
+        // Toggle version accordion details
+        function toggleVersion(element) {
+            const isActive = element.classList.contains('active');
             
-            let hiddenInputId = type === 'pos' ? 'selected-pos' : 
-                               type === 'league' ? 'selected-league' :
-                               type === 'theme' ? 'selected-type' : 'selected-club';
-            document.getElementById(hiddenInputId).value = name;
+            // Close all active items
+            document.querySelectorAll('.ver-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // If the clicked one wasn't active, open it
+            if (!isActive) {
+                element.classList.add('active');
+            }
         }
 
-        function nextStep(stepId) {
-            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-            document.getElementById(stepId).classList.add('active');
-        }
-
-        document.getElementById('orderForm').onsubmit = async (e) => {
-            e.preventDefault();
-            
-            // Format stats to include all 6 fields plus OVR
-            const statsText = `PAC:${document.getElementById('pac').value} SHO:${document.getElementById('sho').value} PAS:${document.getElementById('pas').value} DRI:${document.getElementById('dri').value} DEF:${document.getElementById('def').value} PHY:${document.getElementById('phy').value}`;
-            
-            const { error } = await supabaseClient.from('orders').insert([{
-                buyer: document.getElementById('buyer_name').value,
-                player: document.getElementById('player_name').value,
-                nationality: document.getElementById('nationality').value,
-                position: document.getElementById('selected-pos').value,
-                league: document.getElementById('selected-league').value,
-                card_type: document.getElementById('selected-type').value,
-                club: document.getElementById('selected-club').value,
-                stats: statsText,
-                ovr: document.getElementById('ovr').value // Synchronized with Admin
-            }]);
-
-            if (error) alert("Error: " + error.message);
-            else nextStep('thanks');
-        };
+        // Change nav background opacity on scroll
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('header');
+            if (window.scrollY > 50) {
+                header.style.backgroundColor = 'rgba(7, 9, 14, 0.95)';
+                header.style.padding = '12px 24px';
+            } else {
+                header.style.backgroundColor = 'var(--bg-nav)';
+                header.style.padding = '16px 24px';
+            }
+        });
     </script>
 </body>
 </html>
